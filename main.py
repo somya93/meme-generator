@@ -18,9 +18,10 @@
 
 import argparse
 import math
+import requests
 from google.cloud import vision
 from PIL import Image, ImageDraw
-
+from io import BytesIO
 
 # [START vision_face_detection_tutorial_send_request]
 def detect_face(face_file, max_results):
@@ -34,9 +35,11 @@ def detect_face(face_file, max_results):
     """
     client = vision.ImageAnnotatorClient()
 
-    content = face_file.read()
-    image = vision.Image(content=content)
+    # content = face_file.read()
+    # image = vision.Image(content=content)
 
+    image = vision.Image()
+    image.source.image_uri = face_file
     return client.face_detection(
         image=image, max_results=max_results).face_annotations
 
@@ -45,7 +48,7 @@ def detect_face(face_file, max_results):
 
 
 # [START vision_face_detection_tutorial_process_response]
-def highlight_eyes(image, faces, output_filename):
+def highlight_eyes(im, faces, output_filename):
     """Gets the landmarks on the faces, returns them in a variable called box
 
     Args:
@@ -53,7 +56,7 @@ def highlight_eyes(image, faces, output_filename):
       faces: a list of faces found in the file. This should be in the format
           returned by the Vision API.
     """
-    im = Image.open(image)
+    # im = Image.open(image)
     draw = ImageDraw.Draw(im)
 
     for face in faces:
@@ -128,20 +131,22 @@ def add_prop(face_image, prop_image, output_file, box):
 
 # [START vision_face_detection_tutorial_run_application]
 def main(input_filename, output_filename, max_results):
-    with open(input_filename, 'rb') as image:
-        faces = detect_face(image, max_results)
-        print('Found {} face{}'.format(
-            len(faces), '' if len(faces) == 1 else 's'))
-        print('Writing to file {}'.format(output_filename))
-        # Reset the file pointer, so we can read the file again
-        image.seek(0)
+    # with open(input_filename, 'rb') as image:
+    faces = detect_face(input_filename, max_results)
+    print('Found {} face{}'.format(
+        len(faces), '' if len(faces) == 1 else 's'))
+    print('Writing to file {}'.format(output_filename))
+    # Reset the file pointer, so we can read the file again
+    # image.seek(0)
 
-        # get the eyes' landmarks
-        box = highlight_eyes(image, faces, output_filename)
+    # get the eyes' landmarks
+    response = requests.get(input_filename)
+    image = Image.open(BytesIO(response.content))
+    box = highlight_eyes(image, faces, output_filename)
 
-        # overlay the meme glasses image onto the face
-        with open("resources\meme_glasses.png", 'rb') as image2:
-            add_prop(output_filename, image2, output_filename, box)
+    # overlay the meme glasses image onto the face
+    with open("resources\meme_glasses.png", 'rb') as image2:
+        add_prop(output_filename, image2, output_filename, box)
 
 
 # [END vision_face_detection_tutorial_run_application]
