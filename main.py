@@ -23,12 +23,14 @@ from google.cloud import vision
 from PIL import Image, ImageDraw
 from io import BytesIO
 
+
 # [START vision_face_detection_tutorial_send_request]
 def detect_face(face_file, max_results):
     """Uses the Vision API to detect faces in the given file.
 
     Args:
         face_file: A file-like object containing an image with faces.
+        max_results: Maximum number of faces to be detected
 
     Returns:
         An array of Face objects with information about the picture.
@@ -52,9 +54,11 @@ def highlight_eyes(im, faces, output_filename):
     """Gets the landmarks on the faces, returns them in a variable called box
 
     Args:
-      image: a file containing the image with the faces.
-      faces: a list of faces found in the file. This should be in the format
-          returned by the Vision API.
+        im: a file containing the image with the faces.
+        faces: a list of faces found in the file. This should be in the format returned by the Vision API.
+        output_filename: saves the output to location output_filename
+    Returns:
+        A list of coordinates of left eyes corner, right eye corner and midpoint between the eyes
     """
     # im = Image.open(image)
     draw = ImageDraw.Draw(im)
@@ -102,12 +106,14 @@ def add_prop(face_image, prop_image, output_file, box):
     # draw.ellipse(twoPointList, 'red')
 
     # calculate the slope of the line from corner to corner of the eyes, to get the orientation of the glasses
-    # adjusted the y-coordinates of the background image since the top-left corner of the image is (0,0) instead of the bottom-left
+    # adjusted the y-coordinates of the background image since the top-left corner of the image is (0,0) instead of
+    # the bottom-left
     # slope formula: m = (y2 - y1)/(x2 - x1)
     slope = ((-box[1][1]) - (-box[0][1])) / (box[1][0] - box[0][0])
     angle = math.degrees(math.atan(slope))
 
-    # if the face is inverted, i.e., left eye is to the right of the right eye, then rotate the mem glasses by an additional 180 deg.
+    # if the face is inverted, i.e., left eye is to the right of the right eye, then rotate the mem glasses by
+    # an additional 180 deg.
     if box[0][0] > box[1][0]:
         foreground = foreground.rotate(angle + 180)
     else:
@@ -120,7 +126,8 @@ def add_prop(face_image, prop_image, output_file, box):
     foreground = foreground.resize((size, int(foreground.size[1] / lengthpercent)))
 
     # finally paste the prop_image onto the face
-    # specify the exact coordinates where you the prop_image to be pasted/ In this case, we want the centre point of the prop_image to align with the midpoint between the eyes
+    # specify the exact coordinates where you the prop_image to be pasted/ In this case, we want the centre point of
+    # the prop_image to align with the midpoint between the eyes
     background.paste(foreground, (int(box[2][0] - (foreground.size[0] / 2)), int(box[2][1] - (foreground.size[1] / 2))),
                      foreground)
     background.show()
