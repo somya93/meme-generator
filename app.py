@@ -138,19 +138,20 @@ def generateMeme(request_data):
     uri = request_data["uri"]
     output_filename = "out.jpg"
     faces = detect_face(uri)
-    print('Found {} face{}'.format(
+    print('Found {} face{} to add the meme glasses on!'.format(
         len(faces), '' if len(faces) == 1 else 's'))
     print('Writing to file {}'.format(output_filename))
     # Reset the file pointer, so we can read the file again
     # image.seek(0)
 
-    # get the eyes' landmarks
-    response = requests.get(uri)
-    image = Image.open(BytesIO(response.content))
-    highlight_eyes(image, faces, output_filename)
+    if len(faces) > 0:
+        # get the eyes' landmarks
+        response = requests.get(uri)
+        image = Image.open(BytesIO(response.content))
+        highlight_eyes(image, faces, output_filename)
 
-    # display the final image
-    Image.open(output_filename).show()
+        # display the final image
+        Image.open(output_filename).show()
 
 
 @app.route('/generatememe', methods=["POST"])
