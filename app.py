@@ -18,6 +18,7 @@
 
 import math
 import requests
+import os
 
 from flask import Flask, request, jsonify
 from google.cloud import vision
@@ -59,8 +60,8 @@ def highlight_eyes(image_uri, faces, output_filename):
     Returns:
         A list of coordinates of left eyes corner, right eye corner and midpoint between the eyes
     """
-    # image = Image.open(image)
-    # draw = ImageDraw.Draw(image)
+    image = Image.open(requests.get(image_uri, stream=True).raw)
+    draw = ImageDraw.Draw(image)
 
     with open("resources\meme_glasses.png", 'rb') as image2:
         for face in faces:
@@ -77,13 +78,14 @@ def highlight_eyes(image_uri, faces, output_filename):
                    (verticesMidpointEyes.x, verticesMidpointEyes.y)]
 
             # draw line to show the distance between farthest corners of the eyes
-            # draw.line(box + [box[0]], width=5, fill='#00ff00')
+            draw.line(box + [box[0]], width=5, fill='#00ff00')
 
             # draw a point to show the midpoint between the two eyes
-            # leftUpPoint = (box[2][0] - 3, box[2   ][1] - 3)
-            # rightDownPoint = (box[2][0] + 3, box[2][1] + 3)
+            # leftUpPoint = (box[2][0] - 6, box[2][1] - 6)
+            # rightDownPoint = (box[2][0] + 6, box[2][1] + 6)
             # twoPointList = [leftUpPoint, rightDownPoint]
             # draw.ellipse(twoPointList, 'red')
+            # image.show()
 
             # overlay the meme glasses image onto the face
             add_prop(image_uri, image2, output_filename, box)
@@ -97,13 +99,11 @@ def add_prop(image_uri, prop_image, output_file, box):
 
     # we want to align the centre point of the prop_image to the midpoint between the eyes
     # draw a point to show the centre of the prop_image
-    # cx = foreground.size[0] / 2
-    # cy = foreground.size[1] / 2
-    # leftUpPoint = (cx - 3, cy - 3)
-    # rightDownPoint = (cx + 3, cy + 3)
-    # twoPointList = [leftUpPoint, rightDownPoint]
-    # draw = ImageDraw.Draw(foreground)
-    # draw.ellipse(twoPointList, 'red')
+    center_x = foreground.size[0] / 2
+    center_y = foreground.size[1] / 2
+    draw = ImageDraw.Draw(foreground)
+    draw.ellipse([(center_x - 6, center_y - 6), (center_x + 6, center_y + 6)], 'red')
+    foreground.show()
 
     # calculate the slope of the line from corner to corner of the eyes, to get the orientation of the glasses
     # adjusted the y-coordinates of the background image since the top-left corner of the image is (0,0) instead of
@@ -137,6 +137,8 @@ def add_prop(image_uri, prop_image, output_file, box):
 def generateMeme(request_data):
     uri = request_data["uri"]
     output_filename = "out.jpg"
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
     faces = detect_face(uri)
     print('Found {} face{} to add the meme glasses on!'.format(
         len(faces), '' if len(faces) == 1 else 's'))
