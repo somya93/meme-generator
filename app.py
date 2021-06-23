@@ -44,10 +44,7 @@ def detect_face(face_file):
 
     image = vision.Image()
     image.source.image_uri = face_file
-    return client.face_detection(
-        image=image).face_annotations
-
-
+    return client.face_detection(image=image).face_annotations
 # [END vision_face_detection_tutorial_send_request]
 
 
@@ -65,31 +62,31 @@ def highlight_eyes(im, faces, output_filename):
     # im = Image.open(image)
     draw = ImageDraw.Draw(im)
 
-    for face in faces:
-        for landmark in face.landmarks:
-            if landmark.type_ == vision.FaceAnnotation.Landmark.Type.LEFT_EYE_LEFT_CORNER:
-                verticesLeftLeftEyebrow = landmark.position
-            if landmark.type_ == vision.FaceAnnotation.Landmark.Type.RIGHT_EYE_RIGHT_CORNER:
-                verticesRightRightEyebrow = landmark.position
-            if landmark.type_ == vision.FaceAnnotation.Landmark.Type.MIDPOINT_BETWEEN_EYES:
-                verticesMidpointEyes = landmark.position
+    with open("resources\meme_glasses.png", 'rb') as image2:
+        for face in faces:
+            for landmark in face.landmarks:
+                if landmark.type_ == vision.FaceAnnotation.Landmark.Type.LEFT_EYE_LEFT_CORNER:
+                    verticesLeftLeftEyebrow = landmark.position
+                if landmark.type_ == vision.FaceAnnotation.Landmark.Type.RIGHT_EYE_RIGHT_CORNER:
+                    verticesRightRightEyebrow = landmark.position
+                if landmark.type_ == vision.FaceAnnotation.Landmark.Type.MIDPOINT_BETWEEN_EYES:
+                    verticesMidpointEyes = landmark.position
 
-        box = [(verticesLeftLeftEyebrow.x, verticesLeftLeftEyebrow.y),
-               (verticesRightRightEyebrow.x, verticesRightRightEyebrow.y),
-               (verticesMidpointEyes.x, verticesMidpointEyes.y)]
+            box = [(verticesLeftLeftEyebrow.x, verticesLeftLeftEyebrow.y),
+                   (verticesRightRightEyebrow.x, verticesRightRightEyebrow.y),
+                   (verticesMidpointEyes.x, verticesMidpointEyes.y)]
 
-        # draw line to show the distance between farthest corners of the eyes
-        # draw.line(box + [box[0]], width=5, fill='#00ff00')
+            # draw line to show the distance between farthest corners of the eyes
+            # draw.line(box + [box[0]], width=5, fill='#00ff00')
 
-        # draw a point to show the midpoint between the two eyes
-        # leftUpPoint = (box[2][0] - 3, box[2   ][1] - 3)
-        # rightDownPoint = (box[2][0] + 3, box[2][1] + 3)
-        # twoPointList = [leftUpPoint, rightDownPoint]
-        # draw.ellipse(twoPointList, 'red')
-    im.save(output_filename)
-    return box
+            # draw a point to show the midpoint between the two eyes
+            # leftUpPoint = (box[2][0] - 3, box[2   ][1] - 3)
+            # rightDownPoint = (box[2][0] + 3, box[2][1] + 3)
+            # twoPointList = [leftUpPoint, rightDownPoint]
+            # draw.ellipse(twoPointList, 'red')
 
-
+            # overlay the meme glasses image onto the face
+            add_prop(output_filename, image2, output_filename, box)
 # [END vision_face_detection_tutorial_process_response]
 
 
@@ -133,9 +130,7 @@ def add_prop(face_image, prop_image, output_file, box):
     # the prop_image to align with the midpoint between the eyes
     background.paste(foreground, (int(box[2][0] - (foreground.size[0] / 2)), int(box[2][1] - (foreground.size[1] / 2))),
                      foreground)
-    background.show()
     background.save(output_file)
-
 # [END]
 
 
@@ -152,12 +147,10 @@ def generateMeme(request_data):
     # get the eyes' landmarks
     response = requests.get(uri)
     image = Image.open(BytesIO(response.content))
-    box = highlight_eyes(image, faces, output_filename)
+    highlight_eyes(image, faces, output_filename)
 
-    # overlay the meme glasses image onto the face
-    with open("resources\meme_glasses.png", 'rb') as image2:
-        add_prop(output_filename, image2, output_filename, box)
-
+    # display the final image
+    Image.open(output_filename).show()
 
 
 @app.route('/generatememe', methods=["POST"])
