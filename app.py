@@ -49,7 +49,7 @@ def detect_face(face_file):
 
 
 # [START vision_face_detection_tutorial_process_response]
-def highlight_eyes(im, faces, output_filename):
+def highlight_eyes(image_uri, faces, output_filename):
     """Gets the landmarks on the faces, returns them in a variable called box
 
     Args:
@@ -59,8 +59,8 @@ def highlight_eyes(im, faces, output_filename):
     Returns:
         A list of coordinates of left eyes corner, right eye corner and midpoint between the eyes
     """
-    # im = Image.open(image)
-    draw = ImageDraw.Draw(im)
+    # image = Image.open(image)
+    # draw = ImageDraw.Draw(image)
 
     with open("resources\meme_glasses.png", 'rb') as image2:
         for face in faces:
@@ -86,13 +86,13 @@ def highlight_eyes(im, faces, output_filename):
             # draw.ellipse(twoPointList, 'red')
 
             # overlay the meme glasses image onto the face
-            add_prop(output_filename, image2, output_filename, box)
+            add_prop(image_uri, image2, output_filename, box)
 # [END vision_face_detection_tutorial_process_response]
 
 
 # [START]
-def add_prop(face_image, prop_image, output_file, box):
-    background = Image.open(face_image)
+def add_prop(image_uri, prop_image, output_file, box):
+    background = Image.open(requests.get(image_uri, stream=True).raw)
     foreground = Image.open(prop_image)
 
     # we want to align the centre point of the prop_image to the midpoint between the eyes
@@ -146,9 +146,9 @@ def generateMeme(request_data):
 
     if len(faces) > 0:
         # get the eyes' landmarks
-        response = requests.get(uri)
-        image = Image.open(BytesIO(response.content))
-        highlight_eyes(image, faces, output_filename)
+        # response = requests.get(uri)
+        # image = Image.open(BytesIO(response.content))
+        highlight_eyes(uri, faces, output_filename)
 
         # display the final image
         Image.open(output_filename).show()
