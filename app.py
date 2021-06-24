@@ -88,9 +88,9 @@ def highlight_eyes(image_uri, faces, output_filename):
                    (verticesMidpointEyes.x, verticesMidpointEyes.y)]
 
             # draw line to show the distance between farthest corners of the eyes
-            draw.line(box[0] + box[1], width=3, fill='#00ff00')
-            image.save("distance_between_eyes.jpg")
-            image.show()
+            # draw.line(box[0] + box[1], width=3, fill='#00ff00')
+            # image.save("distance_between_eyes.jpg")
+            # image.show()
 
             # draw a point to show the midpoint between the two eyes
             # draw.ellipse([(box[2][0] - 3, box[2][1] - 3), (box[2][0] + 3, box[2][1] + 3)], 'red')
