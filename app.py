@@ -16,13 +16,15 @@
 
 """Overlays meme glasses on detected faces in the given image."""
 
-import math, requests, os, json
+import json
+import math
+import os
+import requests
 
+from PIL import Image, ImageDraw, ImageOps
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from google.cloud import vision
-from PIL import Image, ImageDraw
-
 
 app = Flask(__name__)
 
@@ -41,7 +43,7 @@ def detect_face(face_file):
     # get the credentials from the environment variable
     load_dotenv()
     credentials = json.loads(os.environ.get("CREDENTIALS"))
-    print(credentials)
+    # print(credentials)
     if not os.path.exists("credentials.json"):
         with open("credentials.json", "w") as credFile:
             json.dump(credentials, credFile)
@@ -52,6 +54,8 @@ def detect_face(face_file):
     image = vision.Image()
     image.source.image_uri = face_file
     return client.face_detection(image=image).face_annotations
+
+
 # [END vision_face_detection_tutorial_send_request]
 
 
@@ -60,7 +64,7 @@ def highlight_eyes(image_uri, faces, output_filename):
     """Gets the landmarks on the faces, returns them in a variable called box
 
     Args:
-        im: a file containing the image with the faces.
+        image_uri: uri that contains an image with faces.
         faces: a list of faces found in the file. This should be in the format returned by the Vision API.
         output_filename: saves the output to location output_filename
     Returns:
@@ -84,17 +88,18 @@ def highlight_eyes(image_uri, faces, output_filename):
                    (verticesMidpointEyes.x, verticesMidpointEyes.y)]
 
             # draw line to show the distance between farthest corners of the eyes
-            draw.line(box + [box[0]], width=5, fill='#00ff00')
+            draw.line(box[0] + box[1], width=3, fill='#00ff00')
+            image.save("distance_between_eyes.jpg")
+            image.show()
 
             # draw a point to show the midpoint between the two eyes
-            # leftUpPoint = (box[2][0] - 6, box[2][1] - 6)
-            # rightDownPoint = (box[2][0] + 6, box[2][1] + 6)
-            # twoPointList = [leftUpPoint, rightDownPoint]
-            # draw.ellipse(twoPointList, 'red')
-            # image.show()
+            # draw.ellipse([(box[2][0] - 3, box[2][1] - 3), (box[2][0] + 3, box[2][1] + 3)], 'red')
+            # image.save("midpoint_between_eyes.jpg")
 
             # overlay the meme glasses image onto the face
             add_prop(image_uri, image2, output_filename, box)
+
+
 # [END vision_face_detection_tutorial_process_response]
 
 
@@ -109,7 +114,9 @@ def add_prop(image_uri, prop_image, output_file, box):
     # center_y = foreground.size[1] / 2
     # draw = ImageDraw.Draw(foreground)
     # draw.ellipse([(center_x - 6, center_y - 6), (center_x + 6, center_y + 6)], 'red')
-    # foreground.show()
+    # foreground.save("midpoint_of_meme_glasses.png")
+    # add border
+    # ImageOps.expand(foreground, border=5, fill='black').save('imaged-with-border.png')
 
     # calculate the slope of the line from corner to corner of the eyes, to get the orientation of the glasses
     # adjusted the y-coordinates of the background image since the top-left corner of the image is (0,0) instead of
@@ -126,10 +133,10 @@ def add_prop(image_uri, prop_image, output_file, box):
         foreground = foreground.rotate(angle)
 
     # resize the prop_image as a function of the distance between the corners of the eyes
-    size = math.ceil(math.dist(box[1], box[0]))
-    size = int(size + 0.7 * size)
-    lengthpercent = foreground.size[0] / size
-    foreground = foreground.resize((size, int(foreground.size[1] / lengthpercent)))
+    length = math.ceil(math.dist(box[1], box[0]))
+    desired_length = int(length + 0.8 * length)
+    increment = desired_length / foreground.size[0]
+    foreground = foreground.resize((desired_length, int(foreground.size[1] * increment)))
 
     # finally paste the prop_image onto the face
     # specify the exact coordinates where you the prop_image to be pasted/ In this case, we want the centre point of
@@ -137,10 +144,12 @@ def add_prop(image_uri, prop_image, output_file, box):
     background.paste(foreground, (int(box[2][0] - (foreground.size[0] / 2)), int(box[2][1] - (foreground.size[1] / 2))),
                      foreground)
     background.save(output_file)
+
+
 # [END]
 
 
-def generateMeme(request_data):
+def generate_meme(request_data):
     uri = request_data["uri"]
     output_filename = "out.jpg"
     if os.path.exists(output_filename):
@@ -166,13 +175,14 @@ def generateMeme(request_data):
 def index():
     if request.method == "POST":
         data = request.get_json()
-        generateMeme(data)
+        generate_meme(data)
         return jsonify("OK"), 200
+
 
 @app.route('/')
 def home():
     return jsonify("GET OK"), 200
 
+
 if __name__ == "__main__":
     app.run(debug=True)
-
