@@ -39,11 +39,14 @@ def detect_face(face_file):
     """
 
     # get the credentials from the environment variable
+    load_dotenv()
     credentials = json.loads(os.environ.get("CREDENTIALS"))
+    print(credentials)
     if not os.path.exists("credentials.json"):
         with open("credentials.json", "w") as credFile:
             json.dump(credentials, credFile)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+    print(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
 
     client = vision.ImageAnnotatorClient()
     image = vision.Image()
