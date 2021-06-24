@@ -16,14 +16,13 @@
 
 """Overlays meme glasses on detected faces in the given image."""
 
-import math
-import requests
-import os
+import math, requests, os, json
 
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from google.cloud import vision
 from PIL import Image, ImageDraw
-from io import BytesIO
+
 
 app = Flask(__name__)
 
@@ -38,11 +37,15 @@ def detect_face(face_file):
     Returns:
         An array of Face objects with information about the picture.
     """
+
+    # get the credentials from the environment variable
+    credentials = json.loads(os.environ.get("CREDENTIALS"))
+    if not os.path.exists("credentials.json"):
+        with open("credentials.json", "w") as credFile:
+            json.dump(credentials, credFile)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+
     client = vision.ImageAnnotatorClient()
-
-    # content = face_file.read()
-    # image = vision.Image(content=content)
-
     image = vision.Image()
     image.source.image_uri = face_file
     return client.face_detection(image=image).face_annotations
@@ -99,11 +102,11 @@ def add_prop(image_uri, prop_image, output_file, box):
 
     # we want to align the centre point of the prop_image to the midpoint between the eyes
     # draw a point to show the centre of the prop_image
-    center_x = foreground.size[0] / 2
-    center_y = foreground.size[1] / 2
-    draw = ImageDraw.Draw(foreground)
-    draw.ellipse([(center_x - 6, center_y - 6), (center_x + 6, center_y + 6)], 'red')
-    foreground.show()
+    # center_x = foreground.size[0] / 2
+    # center_y = foreground.size[1] / 2
+    # draw = ImageDraw.Draw(foreground)
+    # draw.ellipse([(center_x - 6, center_y - 6), (center_x + 6, center_y + 6)], 'red')
+    # foreground.show()
 
     # calculate the slope of the line from corner to corner of the eyes, to get the orientation of the glasses
     # adjusted the y-coordinates of the background image since the top-left corner of the image is (0,0) instead of
